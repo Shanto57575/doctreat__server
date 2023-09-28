@@ -26,7 +26,7 @@ const verifyJWT = async (req, res, next) => {
     if (!authorization) {
         res.status(401).send({ error: true, message: "Unauthorized access" })
     }
-    const token = authorization.split(' ')[1];
+    const token = authorization?.split(' ')[1];
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (error, decoded) => {
         if (error) {
             res.send({ error: true, message: "unauthorized access" })
@@ -43,6 +43,7 @@ async function run() {
 
         const docsCollection = client.db('DoctorsDB').collection('docServices');
         const bookingCollection = client.db('DoctorsDB').collection('booking');
+        const blogsCollection = client.db('DoctorsDB').collection('blogs');
 
         //jwt
 
@@ -134,6 +135,18 @@ async function run() {
             }
             const result = await docsCollection.findOne(query, options);
             res.send(result);
+        })
+
+        app.get('/blogs', async (req, res) => {
+            const result = await blogsCollection.find().toArray();
+            res.send(result)
+        })
+
+        app.get('/blogs/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await blogsCollection.findOne(query);
+            res.send(result)
         })
 
         app.get('/bookings', verifyJWT, async (req, res) => {
