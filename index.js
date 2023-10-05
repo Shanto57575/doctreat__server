@@ -21,20 +21,6 @@ const client = new MongoClient(uri, {
     }
 });
 
-const verifyJWT = async (req, res, next) => {
-    const authorization = req.headers.authorization
-    if (!authorization) {
-        res.status(401).send({ error: true, message: "Unauthorized access" })
-    }
-    const token = authorization?.split(' ')[1];
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (error, decoded) => {
-        if (error) {
-            res.send({ error: true, message: "unauthorized access" })
-        }
-        req.decoded = decoded
-        next()
-    })
-}
 
 async function run() {
     try {
@@ -42,20 +28,12 @@ async function run() {
         await client.connect();
 
         const docsCollection = client.db('DoctorsDB').collection('docServices');
-        const bookingCollection = client.db('DoctorsDB').collection('booking');
         const blogsCollection = client.db('DoctorsDB').collection('blogs');
+        const shopCollection = client.db('DoctorsDB').collection('shop');
+        const cartsCollection = client.db('DoctorsDB').collection('carts');
 
-        //jwt
 
-        app.post('/jwt', (req, res) => {
-            const user = req.body;
-            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
-                expiresIn: '1h'
-            })
-            res.send({ token })
-        })
-
-        //doctor
+        //doctor 
         app.get('/doctors', async (req, res) => {
             const query = await docsCollection.find().limit(4).toArray();
             res.send(query);
@@ -92,11 +70,6 @@ async function run() {
                 }
             }
 
-            console.log(req.query);
-            console.log(filters);
-
-            console.log("filters.length=>", filters.length);
-
             const skip = (page - 1) * itemsPerPage;
             if (filters.length === 0) {
                 const result = await docsCollection
@@ -120,23 +93,7 @@ async function run() {
             res.send(result);
         })
 
-        app.get('/doctors/:id', async (req, res) => {
-            const id = req.params.id;
-            const query = { _id: new ObjectId(id) };
-            const options = {
-                projection: {
-                    name: 1,
-                    speciality: 1,
-                    service: 1,
-                    fees: 1,
-                    picture: 1,
-                    country: 1, experience: 1
-                }
-            }
-            const result = await docsCollection.findOne(query, options);
-            res.send(result);
-        })
-
+        // blog section
         app.get('/blogs', async (req, res) => {
             const result = await blogsCollection.find().toArray();
             res.send(result)
@@ -149,45 +106,27 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/bookings', verifyJWT, async (req, res) => {
-            let query = {};
-            if (req.query?.email) {
-                query = { email: req.query?.email }
-            }
-            const result = await bookingCollection.find(query).toArray();
-            res.send(result)
-        })
-
-        app.post('/bookings', async (req, res) => {
-            const data = req.body;
-            const searchData = await bookingCollection.findOne({ id: data.id });
-
-            if (searchData) {
-                res.status(409).json({ message: "DATA ALREADY EXISTS" })
-            }
-            else {
-                const result = await bookingCollection.insertOne(data);
-                res.send(result);
-            }
-        })
-
-        app.patch('/bookings/:id', async (req, res) => {
-            const data = req.body;
-            const id = req.params.id;
-            const query = { _id: new ObjectId(id) };
-            const updatedStatus = {
-                $set: {
-                    status: data.status
-                }
-            }
-            const result = await bookingCollection.updateOne(query, updatedStatus);
+        app.get('/shop', async (req, res) => {
+            const result = await shopCollection.find().toArray();
             res.send(result);
         })
 
-        app.delete('/bookings/:id', async (req, res) => {
-            const id = req.params.id;
-            const query = { _id: new ObjectId(id) };
-            const result = await bookingCollection.deleteOne(query);
+        app.get('/carts', async (req, res) => {
+            const email = req.query.email;
+
+            if (!email) {
+                res.send([])
+            }
+
+            const query = { email: email }
+            const result = await cartsCollection.find(query).toArray();
+            res.send(result);
+        })
+
+        app.post('/carts', async (req, res) => {
+            const data = req.body;
+            console.log(data);
+            const result = await cartsCollection.insertOne(data);
             res.send(result);
         })
 
