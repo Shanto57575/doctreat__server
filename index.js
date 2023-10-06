@@ -115,7 +115,7 @@ async function run() {
             const email = req.query.email;
 
             if (!email) {
-                res.send([])
+                return res.send([])
             }
 
             const query = { email: email }
@@ -123,12 +123,29 @@ async function run() {
             res.send(result);
         })
 
+        app.delete('/carts/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await cartsCollection.deleteOne(query)
+            res.send(result);
+        })
+
+
         app.post('/carts', async (req, res) => {
             const data = req.body;
-            console.log(data);
+            delete data._id;
+
+            const query = { email: data.email, name: data.name }
+            const alreadyExists = await cartsCollection.findOne(query)
+
+            if (alreadyExists) {
+                return res.status(400).send({ error: "Product Already Added" })
+            }
+
             const result = await cartsCollection.insertOne(data);
             res.send(result);
         })
+
 
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
