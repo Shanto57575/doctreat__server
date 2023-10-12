@@ -27,11 +27,49 @@ async function run() {
 
         await client.connect();
 
+        const usersCollection = client.db('DoctorsDB').collection('users');
         const docsCollection = client.db('DoctorsDB').collection('docServices');
         const blogsCollection = client.db('DoctorsDB').collection('blogs');
         const shopCollection = client.db('DoctorsDB').collection('shop');
         const cartsCollection = client.db('DoctorsDB').collection('carts');
 
+
+
+        app.get('/users', async (req, res) => {
+            const result = await usersCollection.find().toArray();
+            res.send(result);
+        })
+
+        app.post('/users', async (req, res) => {
+            const user = req.body;
+            const query = { email: user?.email }
+            const isUserExists = await usersCollection.findOne(query)
+            if (isUserExists) {
+                return res.status(403).send({ messages: "User ALready exists", error: "User ALready exists" })
+            }
+            console.log(user);
+            const result = await usersCollection.insertOne(user);
+            res.send(result);
+        })
+
+        app.patch('/users/admin/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const updateDoc = {
+                $set: {
+                    role: "Admin"
+                }
+            }
+            const result = await usersCollection.updateOne(query, updateDoc)
+            res.send(result);
+        })
+
+        app.delete('/users/admin/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await usersCollection.deleteOne(query);
+            res.send(result)
+        })
 
         //doctor 
         app.get('/doctors', async (req, res) => {
