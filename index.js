@@ -4,6 +4,7 @@ require("dotenv").config();
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const app = express();
+const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY)
 const port = process.env.PORT || 5000;
 require('dotenv').config();
 
@@ -50,6 +51,7 @@ async function run() {
         const shopCollection = client.db('DoctorsDB').collection('shop');
         const cartsCollection = client.db('DoctorsDB').collection('carts');
         const commentsCollection = client.db('DoctorsDB').collection('comments');
+        const paymentCollection = client.db('DoctorsDB').collection('payment');
 
         app.post('/jwt', (req, res) => {
             const user = req.body;
@@ -57,17 +59,7 @@ async function run() {
             res.send({ token })
         })
 
-        const verifyAdmin = async (req, res, next) => {
-            const email = req.decoded?.email;
-            const query = { email: email };
-            const user = await usersCollection.findOne(query);
-            if (user?.role !== 'Admin') {
-                return res.status(403).send({ error: true, message: "Forbidden Access!" })
-            }
-            next();
-        }
-
-        app.get('/users', verifyJWT, async (req, res) => {
+        app.get('/users', async (req, res) => {
             const result = await usersCollection.find().toArray();
             res.send(result);
         })
@@ -83,7 +75,20 @@ async function run() {
             res.send(result);
         })
 
-        app.get('/users/admin/:email', verifyJWT, verifyAdmin, async (req, res) => {
+        app.put('/users', async (req, res) => {
+            const user = req.body;
+            const updateDoc = {
+                $set: {
+                    plot: `A harvest of random numbers, such as: ${Math.random()}`
+                },
+            };
+
+            const result = await usersCollection.updateOne(user)
+            res.send(result);
+        })
+
+
+        app.get('/users/admin/:email', verifyJWT, async (req, res) => {
             const email = req.params?.email;
 
             if (req.decoded?.email !== email) {
@@ -243,6 +248,31 @@ async function run() {
 
             const result = await cartsCollection.insertOne(data);
             res.send(result);
+        })
+
+        app.post('/create-payment-intent', verifyJWT, async (req, res) => {
+            const { price } = req.body;
+            const amount = parseInt(price * 100);
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: 'usd',
+                payment_method_types: ['card']
+            })
+
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            })
+        })
+
+        app.post('/payments', async (req, res) => {
+            const payment = req.body;
+            console.log(payment);
+            const insertResult = await paymentCollection.insertOne(payment);
+
+            const query = { _id: { $in: payment.cartItems.map(id => new ObjectId(id)) } }
+            const deleteResult = await cartsCollection.deleteMany(query);
+
+            res.send({ insertResult, deleteResult })
         })
 
         await client.db("admin").command({ ping: 1 });
