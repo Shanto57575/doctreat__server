@@ -266,13 +266,31 @@ async function run() {
 
         app.post('/payments', async (req, res) => {
             const payment = req.body;
-            console.log(payment);
+
+            const uniqueArray = [...new Set(payment.itemsCategory)]
+            payment.itemsCategory = uniqueArray;
+
+            // console.log(payment);
             const insertResult = await paymentCollection.insertOne(payment);
 
             const query = { _id: { $in: payment.cartItems.map(id => new ObjectId(id)) } }
             const deleteResult = await cartsCollection.deleteMany(query);
 
             res.send({ insertResult, deleteResult })
+        })
+
+        app.get('/payments/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email }
+            const result = await paymentCollection.find(query).toArray();
+            res.send(result);
+        })
+
+        app.delete('/payments/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email }
+            const result = await paymentCollection.deleteMany(query)
+            res.send(result);
         })
 
         await client.db("admin").command({ ping: 1 });
