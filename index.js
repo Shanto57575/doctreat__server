@@ -11,6 +11,8 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+//JWT Verification
+
 const verifyJWT = (req, res, next) => {
     const authorization = req.headers.authorization;
 
@@ -42,8 +44,6 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
 
-        await client.connect();
-
         const usersCollection = client.db('DoctorsDB').collection('users');
         const docsCollection = client.db('DoctorsDB').collection('docServices');
         const blogsCollection = client.db('DoctorsDB').collection('blogs');
@@ -74,17 +74,18 @@ async function run() {
             res.send(result);
         })
 
-        app.put('/users', async (req, res) => {
-            const user = req.body;
-            const updateDoc = {
-                $set: {
-                    plot: `A harvest of random numbers, such as: ${Math.random()}`
-                },
-            };
+        // TODO
+        // app.put('/users', async (req, res) => {
+        //     const user = req.body;
+        //     const updateDoc = {
+        //         $set: {
 
-            const result = await usersCollection.updateOne(user)
-            res.send(result);
-        })
+        //         },
+        //     };
+
+        //     const result = await usersCollection.updateOne(user)
+        //     res.send(result);
+        // })
 
 
         app.get('/users/admin/:email', verifyJWT, async (req, res) => {
@@ -263,13 +264,12 @@ async function run() {
             })
         })
 
-        app.post('/payments', async (req, res) => {
+        app.post('/payments', verifyJWT, async (req, res) => {
             const payment = req.body;
 
             const uniqueArray = [...new Set(payment.itemsCategory)]
             payment.itemsCategory = uniqueArray;
 
-            // console.log(payment);
             const insertResult = await paymentCollection.insertOne(payment);
 
             const query = { _id: { $in: payment.cartItems.map(id => new ObjectId(id)) } }
