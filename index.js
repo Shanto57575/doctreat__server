@@ -210,6 +210,13 @@ async function run() {
             res.send(result);
         })
 
+        app.post('/shop', async (req, res) => {
+            const newProduct = req.body;
+            console.log(newProduct);
+            const result = await shopCollection.insertOne(newProduct);
+            res.send(result);
+        })
+
         app.get('/carts', verifyJWT, async (req, res) => {
             const email = req.query.email;
 
@@ -266,6 +273,7 @@ async function run() {
 
         app.post('/payments', verifyJWT, async (req, res) => {
             const payment = req.body;
+            console.log(payment);
 
             const uniqueArray = [...new Set(payment.itemsCategory)]
             payment.itemsCategory = uniqueArray;
@@ -278,7 +286,7 @@ async function run() {
             res.send({ insertResult, deleteResult })
         })
 
-        app.get('/payments/:email', verifyJWT, async (req, res) => {
+        app.get('/payments/:email', async (req, res) => {
             const email = req.params.email;
             const query = { email: email }
             const result = await paymentCollection.find(query).toArray();
