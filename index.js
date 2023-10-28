@@ -51,6 +51,7 @@ async function run() {
         const cartsCollection = client.db('DoctorsDB').collection('carts');
         const commentsCollection = client.db('DoctorsDB').collection('comments');
         const paymentCollection = client.db('DoctorsDB').collection('payment');
+        const feedbackCollection = client.db('DoctorsDB').collection('feedback');
 
         app.post('/jwt', (req, res) => {
             const user = req.body;
@@ -180,6 +181,13 @@ async function run() {
             res.send(result);
         })
 
+        app.post('/alldoctors', async (req, res) => {
+            const newSpecialist = req.body;
+            const result = await docsCollection.insertOne(newSpecialist);
+            res.send(result);
+        })
+
+
         // blog section
         app.get('/blogs', async (req, res) => {
             const result = await blogsCollection.find().toArray();
@@ -212,7 +220,6 @@ async function run() {
 
         app.post('/shop', async (req, res) => {
             const newProduct = req.body;
-            console.log(newProduct);
             const result = await shopCollection.insertOne(newProduct);
             res.send(result);
         })
@@ -240,7 +247,6 @@ async function run() {
             const result = await cartsCollection.deleteOne(query)
             res.send(result);
         })
-
 
         app.post('/carts', async (req, res) => {
             const data = req.body;
@@ -273,7 +279,6 @@ async function run() {
 
         app.post('/payments', verifyJWT, async (req, res) => {
             const payment = req.body;
-            console.log(payment);
 
             const uniqueArray = [...new Set(payment.itemsCategory)]
             payment.itemsCategory = uniqueArray;
@@ -298,6 +303,13 @@ async function run() {
             const query = { email: email }
             const result = await paymentCollection.deleteMany(query)
             res.send(result);
+        })
+
+        app.post('/feedback', verifyJWT, async (req, res) => {
+            const feedback = req.body;
+            console.log(feedback);
+            const feedbackResult = await feedbackCollection.insertOne(feedback);
+            res.send(feedbackResult);
         })
 
         await client.db("admin").command({ ping: 1 });
