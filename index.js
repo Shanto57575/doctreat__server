@@ -307,9 +307,13 @@ async function run() {
 
         app.post('/feedback', verifyJWT, async (req, res) => {
             const feedback = req.body;
-            console.log(feedback);
             const feedbackResult = await feedbackCollection.insertOne(feedback);
             res.send(feedbackResult);
+        })
+
+        app.get('/feedback', verifyJWT, async (req, res) => {
+            const result = await feedbackCollection.find().toArray();
+            res.send(result);
         })
 
         await client.db("admin").command({ ping: 1 });
