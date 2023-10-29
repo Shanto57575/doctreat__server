@@ -12,7 +12,6 @@ app.use(cors());
 app.use(express.json());
 
 //JWT Verification
-
 const verifyJWT = (req, res, next) => {
     const authorization = req.headers.authorization;
 
@@ -74,20 +73,6 @@ async function run() {
             const result = await usersCollection.insertOne(user);
             res.send(result);
         })
-
-        // TODO
-        // app.put('/users', async (req, res) => {
-        //     const user = req.body;
-        //     const updateDoc = {
-        //         $set: {
-
-        //         },
-        //     };
-
-        //     const result = await usersCollection.updateOne(user)
-        //     res.send(result);
-        // })
-
 
         app.get('/users/admin/:email', verifyJWT, async (req, res) => {
             const email = req.params?.email;
@@ -289,6 +274,11 @@ async function run() {
             const deleteResult = await cartsCollection.deleteMany(query);
 
             res.send({ insertResult, deleteResult })
+        })
+
+        app.get('/payments', async (req, res) => {
+            const result = await paymentCollection.find().toArray();
+            res.send(result);
         })
 
         app.get('/payments/:email', async (req, res) => {
