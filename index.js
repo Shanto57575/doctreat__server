@@ -301,7 +301,7 @@ async function run() {
             res.send(feedbackResult);
         })
 
-        app.get('/feedback', verifyJWT, async (req, res) => {
+        app.get('/feedback', async (req, res) => {
             const result = await feedbackCollection.find().toArray();
             res.send(result);
         })
